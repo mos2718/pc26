@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>上傳 FHIR PHR Patient（含暱稱）</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans TC',Arial;max-width:760px;margin:28px auto;padding:12px}
+    h1{font-size:1.2rem;margin-bottom:6px}
+    label{display:block;margin-top:10px;font-weight:600}
+    input[type=text], select{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd}
+    button{margin-top:12px;padding:10px 14px;border-radius:8px;border:0;background:#0b6; color:white;font-weight:600;cursor:pointer}
+    .muted{color:#666;font-size:0.9rem}
+    .result{margin-top:16px;padding:12px;border-radius:8px;border:1px dashed #bbb;background:#fbfbff}
+    .link{word-break:break-all}
+    .row{display:flex;gap:8px}
+    .small{width:160px}
+  </style>
+</head>
+<body>
+  <h1>上傳 FHIR PHR Patient（輸入暱稱）</h1>
+  <p class="muted">FHIR server: <code>https://hapi.fhir.org/baseR4/</code> | PHR 管理中心 Organization id: <code>52960705</code></p>
+
+  <label for="nick">暱稱（必填，將放在 name.use = "nickname"）</label>
+  <input id="nick" type="text" placeholder="例如：小明、阿芳" />
+
+  <label for="fullname">正式姓名（選填）</label>
+  <input id="fullname" type="text" placeholder="例如：王小明（可選）" />
+
+  <div class="row">
+    <div class="small">
+      <label for="gender">性別（選填）</label>
+      <select id="gender">
+        <option value="">未指定</option>
+        <option value="male">male</option>
+        <option value="female">female</option>
+        <option value="other">other</option>
+        <option value="unknown">unknown</option>
+      </select>
+    </div>
+    <div style="flex:1">
+      <label for="birthDate">出生日期（選填，YYYY-MM-DD）</label>
+      <input id="birthDate" type="text" placeholder="例如：1980-07-15" />
+    </div>
+  </div>
+
+  <label for="identifier">患者識別碼（選填）</label>
+  <input id="identifier" type="text" placeholder="例如：PHR-0001 或 NHI-XXXX" />
+
+  <div class="row">
+    <div class="small">
+      <label for="serverUrl">FHIR Server</label>
+      <input id="serverUrl" type="text" value="https://hapi.fhir.org/baseR4/" />
+    </div>
+    <div style="flex:1">
+      <label for="preferReturn">回傳偏好</label>
+      <select id="preferReturn">
+        <option value="representation">representation (回傳資源)</option>
+        <option value="minimal">minimal (只回傳 headers)</option>
+      </select>
+    </div>
+  </div>
+
+  <button id="createBtn">建立並上傳 Patient</button>
+
+  <div id="status" class="result" style="display:none"></div>
+
+  <script>
+    const PHR_ORG_ID = '52960705'; // 使用者提供的 PHR 管理中心 id
+    const createBtn = document.getElementById('createBtn');
+    const statusEl = document.getElementById('status');
+
+    function showStatus(html){
+      statusEl.style.display = 'block';
+      statusEl.innerHTML = html;
+    }
+    function clearStatus(){ statusEl.style.display='none'; statusEl.innerHTML=''; }
+
+    createBtn.addEventListener('click', async () => {
+      clearStatus();
+      const nick = document.getElementById('nick').value.trim();
+      const fullname = document.getElementById('fullname').value.trim();
+      const gender = document.getElementById('gender').value;
+      const birthDate = document.getElementById('birthDate').value.trim();
+      const identifier = document.getElementById('identifier').value.trim();
+      let server = document.getElementById('serverUrl').value.trim();
+      const preferReturn = document.getElementById('preferReturn').value;
+
+      if(!nick){
+        showStatus('<strong style="color:#a33">請輸入暱稱（nickname）。</strong>');
+        return;
+      }
+
+      if(!server) server = 'https://hapi.fhir.org/baseR4/';
+      if(!server.endsWith('/')) server = server + '/';
+
+      // 建立 Patient resource
+      const patient = {
+        resourceType: 'Patient',
+        name: []
+      };
+
+      // 暱稱放在 use = 'nickname'
+      patient.name.push({ use: 'nickname', given: [nick] });
+
+      // 正式姓名若有，放在 use = 'official'
+      if(fullname){
+        // try to split into given/family by last space
+        const parts = fullname.split(/\s+/);
+        const family = parts.length>1 ? parts.pop() : undefined;
+        const given = parts.length? parts : [fullname];
+        const nameObj = { use: 'official', given: given };
+        if(family) nameObj.family = family;
+        patient.name.push(nameObj);
+      }
+
+      if(gender) patient.gender = gender;
+      if(birthDate) patient.birthDate = birthDate;
+      if(identifier) patient.identifier = [{ value: identifier }];
+
+      // 將 PHR 管理中心設為 managingOrganization reference
+      patient.managingOrganization = { reference: 'Organization/' + PHR_ORG_ID, display: 'PHR 管理中心' };
+
+      showStatus('正在建立並上傳 Patient...');
+
+      try{
+        const resp = await fetch(server + 'Patient', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/fhir+json',
+            'Accept': 'application/fhir+json',
+            'Prefer': 'return=' + preferReturn
+          },
+          body: JSON.stringify(patient)
+        });
+
+        let respText = '';
+        try{ respText = await resp.text(); } catch(e){ respText = ''; }
+
+        if(!resp.ok){
+          showStatus('<strong style="color:#a33">伺服器回傳錯誤：' + resp.status + ' ' + resp.statusText + '</strong><pre>' + escapeHtml(respText) + '</pre>');
+          return;
+        }
+
+        const location = resp.headers.get('location') || resp.headers.get('Location');
+        let id = null;
+        let resourceUrl = null;
+
+        if(location){
+          resourceUrl = location;
+          const m = location.match(/Patient\/(.*?)\b/);
+          if(m && m[1]) id = m[1];
+        }
+
+        let bodyJson = null;
+        if(respText){
+          try{ bodyJson = JSON.parse(respText); } catch(e){ bodyJson = null; }
+          if(bodyJson && bodyJson.id && !id) id = bodyJson.id;
+          if(bodyJson && !resourceUrl && bodyJson.resourceType && bodyJson.id){
+            resourceUrl = server.replace(/\/$/, '') + '/' + bodyJson.resourceType + '/' + bodyJson.id;
+          }
+        }
+
+        if(!id){
+          const contentLocation = resp.headers.get('content-location') || resp.headers.get('Content-Location');
+          if(contentLocation){
+            const m2 = contentLocation.match(/Patient\/(.*?)\b/);
+            if(m2 && m2[1]) id = m2[1];
+            if(!resourceUrl) resourceUrl = contentLocation;
+          }
+        }
+
+        if(!id){
+          showStatus('<strong>上傳成功，但無法解析 resource id。</strong><pre>' + escapeHtml(respText || '[empty response]') + '</pre>');
+          return;
+        }
+
+        let out = '<strong>建立成功！</strong><br/>';
+        out += 'Patient id：<code>' + escapeHtml(id) + '</code><br/>';
+        const constructed = server.replace(/\/$/, '') + '/Patient/' + encodeURIComponent(id);
+        out += '資源位置：<div class="link"><a href="' + escapeHtml(constructed) + '" target="_blank">' + escapeHtml(constructed) + '</a></div>';
+        out += '<div style="margin-top:8px"><button id="copyBtn">複製 id</button></div>';
+        showStatus(out);
+
+        const copyBtn = document.getElementById('copyBtn');
+        copyBtn.addEventListener('click', ()=>{
+          navigator.clipboard.writeText(id).then(()=>{
+            copyBtn.textContent = '已複製';
+            setTimeout(()=>copyBtn.textContent='複製 id',1200);
+          });
+        });
+
+      }catch(err){
+        showStatus('<strong style="color:#a33">發生錯誤：</strong><pre>' + escapeHtml(err && err.message ? err.message : String(err)) + '</pre>');
+      }
+
+    });
+
+    function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  </script>
+
+  <p class="muted" style="margin-top:18px">備註：此範例將暱稱放在 Patient.name.use = "nickname"。範例會把 PHR 管理中心設為 Patient.managingOrganization 的 reference（Organization/52960705）。請勿在公開 demo server 上上傳敏感個資；若伺服器需要 Bearer token 或其他認證，請在 fetch headers 中加入 <code>Authorization: 'Bearer &lt;token&gt;'</code>。</p>
+</body>
+</html>

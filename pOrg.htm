@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>上傳 FHIR Organization (HAPI)</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans TC',Arial;max-width:760px;margin:28px auto;padding:12px}
+    h1{font-size:1.3rem;margin-bottom:6px}
+    label{display:block;margin-top:10px;font-weight:600}
+    input[type=text], textarea, select{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd}
+    button{margin-top:12px;padding:10px 14px;border-radius:8px;border:0;background:#0366d6;color:white;font-weight:600;cursor:pointer}
+    .muted{color:#666;font-size:0.9rem}
+    .result{margin-top:16px;padding:12px;border-radius:8px;border:1px dashed #bbb;background:#fbfbff}
+    .link{word-break:break-all}
+    .row{display:flex;gap:8px}
+    .small{width:120px}
+  </style>
+</head>
+<body>
+  <h1>上傳 FHIR Organization（HAPI FHIR R4）</h1>
+  <p class="muted">FHIR server: <code>https://hapi.fhir.org/baseR4/</code></p>
+
+  <label for="orgName">機構 / 單位名稱 *</label>
+  <input id="orgName" type="text" placeholder="例如：東大門健康中心" />
+
+  <label for="orgType">類型（選填 — 可留空）</label>
+  <input id="orgType" type="text" placeholder="例如：prov, dept, hospital" />
+
+  <label for="orgIdentifier">識別碼（選填）</label>
+  <input id="orgIdentifier" type="text" placeholder="例如：ID-12345 或 OID/..." />
+
+  <div class="row">
+    <div class="small">
+      <label for="serverUrl">FHIR Server</label>
+      <input id="serverUrl" type="text" value="https://hapi.fhir.org/baseR4/" />
+    </div>
+    <div style="flex:1">
+      <label for="preferReturn">回傳偏好</label>
+      <select id="preferReturn">
+        <option value="representation">representation (回傳資源)</option>
+        <option value="minimal">minimal (只回傳 headers)</option>
+      </select>
+    </div>
+  </div>
+
+  <button id="createBtn">建立並上傳 Organization</button>
+
+  <div id="status" class="result" style="display:none"></div>
+
+  <script>
+    const createBtn = document.getElementById('createBtn');
+    const statusEl = document.getElementById('status');
+
+    function showStatus(html){
+      statusEl.style.display = 'block';
+      statusEl.innerHTML = html;
+    }
+
+    function clearStatus(){
+      statusEl.style.display = 'none';
+      statusEl.innerHTML = '';
+    }
+
+    createBtn.addEventListener('click', async () => {
+      clearStatus();
+      const name = document.getElementById('orgName').value.trim();
+      const typeText = document.getElementById('orgType').value.trim();
+      const identifier = document.getElementById('orgIdentifier').value.trim();
+      let server = document.getElementById('serverUrl').value.trim();
+      const preferReturn = document.getElementById('preferReturn').value;
+
+      if(!name){
+        showStatus('<strong style="color:#a33">請輸入機構或單位名稱。</strong>');
+        return;
+      }
+
+      // Ensure server URL ends with a slash
+      if(!server.endsWith('/')) server = server + '/';
+
+      const org = {
+        resourceType: 'Organization',
+        name: name
+      };
+
+      if(typeText){
+        org.type = [{ text: typeText }];
+      }
+
+      if(identifier){
+        org.identifier = [{ value: identifier }];
+      }
+
+      showStatus('正在建立並上傳 Organization，請稍候...');
+
+      try{
+        const resp = await fetch(server + 'Organization', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/fhir+json',
+            'Accept': 'application/fhir+json',
+            'Prefer': 'return=' + preferReturn
+          },
+          body: JSON.stringify(org)
+        });
+
+        // Read response body (may be empty with minimal)
+        let respText = '';
+        try{ respText = await resp.text(); } catch(e){ respText = ''; }
+
+        if(!resp.ok){
+          // Show status and any body
+          showStatus('<strong style="color:#a33">伺服器回傳錯誤：' + resp.status + ' ' + resp.statusText + '</strong><pre>' + escapeHtml(respText) + '</pre>');
+          return;
+        }
+
+        // Attempt to extract id from Location header first
+        const location = resp.headers.get('location') || resp.headers.get('Location');
+        let id = null;
+        let resourceUrl = null;
+
+        if(location){
+          // location might be like /baseR4/Organization/123/_history/1 or full URL
+          resourceUrl = location;
+          // extract id by regex
+          const m = location.match(/Organization\/(.*?)\b/);
+          if(m && m[1]) id = m[1];
+        }
+
+        // If Prefer=return=representation, try parse body JSON
+        let bodyJson = null;
+        if(respText){
+          try{ bodyJson = JSON.parse(respText); } catch(e){ bodyJson = null; }
+          if(bodyJson && bodyJson.id && !id){
+            id = bodyJson.id;
+          }
+          if(bodyJson && !resourceUrl && bodyJson.resourceType && bodyJson.id){
+            // build resource url from server
+            resourceUrl = server.replace(/\/$/, '') + '/' + bodyJson.resourceType + '/' + bodyJson.id;
+          }
+        }
+
+        // As a last resort, some servers return Location header in 'content-location'
+        if(!id){
+          const contentLocation = resp.headers.get('content-location') || resp.headers.get('Content-Location');
+          if(contentLocation){
+            const m2 = contentLocation.match(/Organization\/(.*?)\b/);
+            if(m2 && m2[1]) id = m2[1];
+            if(!resourceUrl) resourceUrl = contentLocation;
+          }
+        }
+
+        if(!id){
+          // If still not found, display whole response for debugging
+          showStatus('<strong>上傳成功，但無法解析 resource id。</strong><pre>' + escapeHtml(respText || '[empty response]') + '</pre>');
+          return;
+        }
+
+        // Build display
+        let out = '<strong>建立成功！</strong><br/>';
+        out += 'Resource id：<code>' + escapeHtml(id) + '</code><br/>';
+        if(resourceUrl){
+          // Normalize resourceUrl to absolute if necessary
+          let fullUrl = resourceUrl;
+          if(resourceUrl.startsWith('/')){
+            // prepend server origin if possible
+            try{
+              const serverBase = new URL(server).origin + new URL(server).pathname.replace(/\/$/, '') ;
+              fullUrl = serverBase + resourceUrl;
+            }catch(e){ fullUrl = resourceUrl; }
+          }
+          out += '資源位置：<div class="link"><a href="' + escapeHtml(fullUrl) + '" target="_blank">' + escapeHtml(fullUrl) + '</a></div>';
+        } else {
+          // provide a constructed link
+          const constructed = server.replace(/\/$/, '') + '/Organization/' + encodeURIComponent(id);
+          out += '資源位置：<div class="link"><a href="' + escapeHtml(constructed) + '" target="_blank">' + escapeHtml(constructed) + '</a></div>';
+        }
+
+        out += '<div style="margin-top:8px"><button id="copyBtn">複製 id</button></div>';
+        showStatus(out);
+
+        // attach copy button
+        const copyBtn = document.getElementById('copyBtn');
+        copyBtn.addEventListener('click', ()=>{
+          navigator.clipboard.writeText(id).then(()=>{
+            copyBtn.textContent = '已複製';
+            setTimeout(()=>copyBtn.textContent='複製 id',1200);
+          });
+        });
+
+      } catch (err){
+        showStatus('<strong style="color:#a33">發生錯誤：</strong><pre>' + escapeHtml(err && err.message ? err.message : String(err)) + '</pre>');
+      }
+    });
+
+    function escapeHtml(s){
+      if(!s) return '';
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+
+  <p class="muted" style="margin-top:18px">備註：此範例使用公開的 HAPI demo server，請勿在正式系統使用敏感個資。若您的 FHIR server 需要認證（例如 Bearer token），可在 fetch headers 中加入 <code>Authorization: 'Bearer &lt;token&gt;'</code>。</p>
+</body>
+</html>

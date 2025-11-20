@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>生理監測 — 心跳 (FHIR 上傳)</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans","Microsoft JhengHei",sans-serif;margin:24px;background:#f7f8fb}
+    .card{background:white;padding:18px;border-radius:10px;box-shadow:0 6px 18px rgba(20,20,30,0.06);max-width:760px;margin:0 auto}
+    label{display:block;margin-top:12px;font-weight:600}
+    input,select,button{margin-top:6px;padding:10px;border-radius:8px;border:1px solid #d6d9e6;width:100%;box-sizing:border-box}
+    .row{display:flex;gap:12px}
+    .row>div{flex:1}
+    pre{background:#0b1220;color:#e6eef8;padding:12px;border-radius:8px;overflow:auto}
+    .muted{color:#666;font-size:0.9rem}
+    .success{color:green}
+    .error{color:#b00020}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>心跳生理監測輸入（FHIR R4 Observation）</h2>
+    <p class="muted">此頁面會產生一個 Observation(resourceType=Observation) 以心跳 (LOINC 8867-4) 為 code，並上傳至指定的 FHIR server。</p>
+
+    <label>FHIR Server URL</label>
+    <input id="fhirServer" value="https://hapi.fhir.org/baseR4/" />
+
+    <label>Patient ID (Resource id)</label>
+    <input id="patientId" value="52960712" />
+
+    <div class="row">
+      <div>
+        <label>心跳 (beats/min)</label>
+        <input id="hrValue" type="number" placeholder="輸入心跳數值，或留空由系統隨機產生" />
+      </div>
+      <div>
+        <label>量測時間 (ISO)</label>
+        <input id="measTime" placeholder="YYYY-MM-DDTHH:mm:ss（預設為現在）" />
+      </div>
+    </div>
+
+    <label>紀錄者（可選）</label>
+    <input id="recorder" placeholder="輸入姓名或單位，不影響 FHIR 必要欄位" />
+
+    <div style="margin-top:14px;display:flex;gap:10px">
+      <button id="btnGenerate">產生並上傳 Observation</button>
+      <button id="btnPreview" type="button">預覽即將上傳的 Observation</button>
+    </div>
+
+    <div style="margin-top:14px">
+      <div id="status" class="muted">狀態：等待操作</div>
+    </div>
+
+    <h3 style="margin-top:18px">上傳回應 / 預覽</h3>
+    <pre id="response">尚未有資料</pre>
+
+    <p class="muted" style="margin-top:12px">備註：此頁使用瀏覽器直接呼叫 FHIR server 的 REST API（POST /Observation）。若伺服器啟用 CORS，才能順利上傳；若遭到 CORS 限制，請使用後端代理或伺服器端轉送。</p>
+  </div>
+
+<script>
+function isoNow(){
+  const d=new Date();
+  return d.toISOString();
+}
+
+function buildObservation(patientId, hrValue, effectiveTime, recorder){
+  return {
+    resourceType: "Observation",
+    status: "final",
+    category: [{
+      coding:[{system:"http://terminology.hl7.org/CodeSystem/observation-category",code:"vital-signs",display:"Vital Signs"}]
+    }],
+    code: {
+      coding: [{
+        system: "http://loinc.org",
+        code: "8867-4",
+        display: "Heart rate"
+      }],
+      text: "Heart rate"
+    },
+    subject: { reference: `Patient/${patientId}` },
+    effectiveDateTime: effectiveTime,
+    valueQuantity: {
+      value: Number(hrValue),
+      unit: "beats/minute",
+      system: "http://unitsofmeasure.org",
+      code: "/min"
+    }
+  };
+}
+
+async function postObservation(fhirServer, observation){
+  // ensure trailing slash
+  if(!fhirServer.endsWith('/')) fhirServer += '/';
+  const url = fhirServer + 'Observation';
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/fhir+json; charset=utf-8',
+      'Accept': 'application/fhir+json'
+    },
+    body: JSON.stringify(observation)
+  });
+  const text = await resp.text();
+  let parsed = text;
+  try{ parsed = JSON.parse(text); } catch(e){}
+  return {ok: resp.ok, status: resp.status, body: parsed, url};
+}
+
+function showResponse(obj){
+  const pre = document.getElementById('response');
+  pre.textContent = JSON.stringify(obj, null, 2);
+}
+
+document.getElementById('btnPreview').addEventListener('click', ()=>{
+  const fhirServer = document.getElementById('fhirServer').value.trim();
+  const patientId = document.getElementById('patientId').value.trim();
+  let hr = document.getElementById('hrValue').value.trim();
+  const time = document.getElementById('measTime').value.trim() || isoNow();
+  const recorder = document.getElementById('recorder').value.trim();
+  if(!patientId){ alert('請填寫 Patient ID'); return; }
+  if(!hr) {
+    // generate a plausible resting heart rate
+    hr = Math.floor(Math.random()*40) + 60; // 60-99
+  }
+  const obs = buildObservation(patientId, hr, time, recorder);
+  showResponse(obs);
+  document.getElementById('status').textContent = '狀態：已產生 Observation（尚未上傳）';
+});
+
+document.getElementById('btnGenerate').addEventListener('click', async ()=>{
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = '狀態：建立 Observation...';
+  const fhirServer = document.getElementById('fhirServer').value.trim();
+  const patientId = document.getElementById('patientId').value.trim();
+  let hr = document.getElementById('hrValue').value.trim();
+  const time = document.getElementById('measTime').value.trim() || isoNow();
+  const recorder = document.getElementById('recorder').value.trim();
+
+  if(!patientId){ alert('請填寫 Patient ID'); return; }
+
+  if(!hr){
+    hr = Math.floor(Math.random()*40) + 60;
+  }
+
+  const observation = buildObservation(patientId, hr, time, recorder);
+  showResponse({note: '正在上傳 Observation 到 FHIR server', observation});
+  statusEl.textContent = '狀態：正在上傳至 ' + fhirServer;
+
+  try{
+    const result = await postObservation(fhirServer, observation);
+    if(result.ok){
+      statusEl.innerHTML = '狀態：上傳成功 — HTTP ' + result.status + '，已建立 Observation。';
+      showResponse({uploaded: true, httpStatus: result.status, serverResponse: result.body, requestUrl: result.url});
+    } else {
+      statusEl.innerHTML = '狀態：上傳失敗 — HTTP ' + result.status;
+      showResponse({uploaded: false, httpStatus: result.status, serverResponse: result.body, requestUrl: result.url});
+    }
+  }catch(err){
+    statusEl.innerHTML = '狀態：上傳發生錯誤';
+    showResponse({error: String(err)});
+  }
+});
+</script>
+</body>
+</html>

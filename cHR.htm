@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>心跳調閱與呈現（FHIR）</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans","Microsoft JhengHei",sans-serif;margin:20px;background:#f5f7fb}
+    .card{background:white;padding:18px;border-radius:10px;box-shadow:0 6px 18px rgba(20,20,30,0.06);max-width:980px;margin:0 auto}
+    label{display:block;margin-top:10px;font-weight:600}
+    input,button,select{margin-top:6px;padding:10px;border-radius:8px;border:1px solid #d6d9e6;width:100%;box-sizing:border-box}
+    .row{display:flex;gap:12px}
+    .row>div{flex:1}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border:1px solid #e6e9f2;padding:8px;text-align:left}
+    th{background:#f0f3fa}
+    pre{background:#0b1220;color:#e6eef8;padding:12px;border-radius:8px;overflow:auto}
+    .muted{color:#666;font-size:0.9rem}
+    .actions{display:flex;gap:10px;margin-top:12px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>心跳調閱與表格呈現（FHIR Observation — LOINC 8867-4）</h2>
+    <p class="muted">此頁面將查詢 FHIR Observation 資源中，LOINC 8867-4（Heart rate）之資料。可直接使用預設 FHIR server 與 patient id。</p>
+
+    <label>FHIR Server URL</label>
+    <input id="fhirServer" value="https://hapi.fhir.org/baseR4/" />
+
+    <label>Patient ID</label>
+    <input id="patientId" value="52960712" />
+
+    <div class="row">
+      <div>
+        <label>LOINC Code</label>
+        <input id="loinc" value="8867-4" />
+      </div>
+      <div>
+        <label>每頁筆數（_count）</label>
+        <input id="count" type="number" value="50" />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btnFetch">抓取心跳資料</button>
+      <button id="btnClear">清除結果</button>
+    </div>
+
+    <div id="status" class="muted" style="margin-top:10px">狀態：等待操作</div>
+
+    <h3 style="margin-top:14px">查詢結果 — 表格</h3>
+    <div style="overflow:auto">
+      <table id="resultTable">
+        <thead>
+          <tr>
+            <th>量測時間</th>
+            <th>心跳值 (bpm)</th>
+            <th>來源/執行者</th>
+            <th>狀態</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:14px">原始回應（最後一筆 Bundle）</h3>
+    <pre id="raw">尚無資料</pre>
+  </div>
+
+<script>
+function ensureSlash(url){ return url.endsWith('/') ? url : url + '/'; }
+
+async function fetchBundle(url){
+  const res = await fetch(url, { headers: { "Accept": "application/fhir+json" }});
+  if(!res.ok){ const txt = await res.text(); throw new Error(`HTTP ${res.status}: ${txt}`); }
+  return await res.json();
+}
+
+function extractObservationsFromBundle(bundle){
+  if(!bundle || !bundle.entry) return [];
+  return bundle.entry
+    .map(e => e.resource)
+    .filter(r => r && r.resourceType === "Observation");
+}
+
+function parseObservation(obs){
+  const time = obs.effectiveDateTime || "";
+  const value = obs.valueQuantity ? obs.valueQuantity.value : "";
+  const performer = Array.isArray(obs.performer) ? obs.performer.map(p => p.display || p.reference).join(", ") : "";
+  const status = obs.status || "";
+  return { time, value, performer, status };
+}
+
+function renderTable(rows){
+  const tbody = document.querySelector('#resultTable tbody');
+  tbody.innerHTML = '';
+
+  if(rows.length === 0){
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td colspan="4">沒有資料</td>';
+    tbody.appendChild(tr);
+    return;
+  }
+
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.time}</td>
+      <td>${r.value}</td>
+      <td>${r.performer}</td>
+      <td>${r.status}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function fetchAllObservations(baseUrl, patientId, loinc, count){
+  baseUrl = ensureSlash(baseUrl);
+  let url = `${baseUrl}Observation?patient=Patient/${encodeURIComponent(patientId)}&code=${encodeURIComponent(loinc)}&_count=${encodeURIComponent(count)}`;
+
+  let all = [];
+  let lastBundle = null;
+
+  while(url){
+    const bundle = await fetchBundle(url);
+    lastBundle = bundle;
+    const obs = extractObservationsFromBundle(bundle);
+    all = all.concat(obs);
+
+    const nextLink = bundle.link && bundle.link.find(l => l.relation === 'next');
+    url = nextLink ? nextLink.url : null;
+
+    if(all.length > 2000) break;
+  }
+
+  return { observations: all, lastBundle };
+}
+
+document.getElementById('btnFetch').addEventListener('click', async ()=>{
+  const server = document.getElementById('fhirServer').value.trim();
+  const patientId = document.getElementById('patientId').value.trim();
+  const loinc = document.getElementById('loinc').value.trim() || '8867-4';
+  const count = Number(document.getElementById('count').value) || 50;
+  const statusEl = document.getElementById('status');
+
+  if(!server || !patientId){ alert('請填寫 FHIR Server 與 Patient ID'); return; }
+
+  statusEl.textContent = '狀態：抓取中...';
+
+  try{
+    const { observations, lastBundle } = await fetchAllObservations(server, patientId, loinc, count);
+
+    const parsed = observations.map(parseObservation)
+      .sort((a,b)=> new Date(b.time) - new Date(a.time));
+
+    renderTable(parsed);
+    document.getElementById('raw').textContent = JSON.stringify(lastBundle, null, 2);
+
+    statusEl.textContent = `狀態：共取得 ${observations.length} 筆資料`;
+  }catch(err){
+    document.getElementById('raw').textContent = String(err);
+    statusEl.textContent = '狀態：抓取失敗';
+  }
+});
+
+document.getElementById('btnClear').addEventListener('click', ()=>{
+  document.querySelector('#resultTable tbody').innerHTML = '';
+  document.getElementById('raw').textContent = '尚無資料';
+  document.getElementById('status').textContent = '狀態：已清除';
+});
+</script>
+</body>
+</html>

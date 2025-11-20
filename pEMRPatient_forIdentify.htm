@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>上傳 FHIR Patient（花東醫中）</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans TC',Arial;max-width:820px;margin:28px auto;padding:16px}
+    h1{font-size:1.3rem;margin-bottom:6px}
+    label{display:block;margin-top:10px;font-weight:600}
+    input[type=text], input[type=date], select{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd}
+    button{margin-top:12px;padding:10px 14px;border-radius:8px;border:0;background:#0069c9;color:white;font-weight:600;cursor:pointer}
+    .muted{color:#666;font-size:0.9rem}
+    .result{margin-top:16px;padding:12px;border-radius:8px;border:1px dashed #bbb;background:#fbfbff}
+    .link{word-break:break-all}
+    .row{display:flex;gap:8px}
+    .small{width:180px}
+  </style>
+</head>
+<body>
+  <h1>上傳 FHIR Patient（醫院：花東醫中）</h1>
+  <p class="muted">FHIR server: <code>https://hapi.fhir.org/baseR4/</code> | 醫院 Organization id: <code>52960701</code></p>
+
+  <label for="given">姓名（必填）</label>
+  <input id="given" type="text" placeholder="請輸入姓名（例如：王小明）" />
+
+  <div class="row">
+    <div class="small">
+      <label for="gender">性別（選填）</label>
+      <select id="gender">
+        <option value="">未指定</option>
+        <option value="male">male</option>
+        <option value="female">female</option>
+        <option value="other">other</option>
+        <option value="unknown">unknown</option>
+      </select>
+    </div>
+    <div style="flex:1">
+      <label for="birthDate">出生日期（選填）</label>
+      <input id="birthDate" type="date" />
+    </div>
+  </div>
+
+  <label for="identifier">患者識別碼（選填）</label>
+  <input id="identifier" type="text" placeholder="例如：NHI-XXXXXXXX 或 hospital-id-123" />
+
+  <div class="row">
+    <div class="small">
+      <label for="serverUrl">FHIR Server</label>
+      <input id="serverUrl" type="text" value="https://hapi.fhir.org/baseR4/" />
+    </div>
+    <div style="flex:1">
+      <label for="preferReturn">回傳偏好</label>
+      <select id="preferReturn">
+        <option value="representation">representation (回傳資源)</option>
+        <option value="minimal">minimal (只回傳 headers)</option>
+      </select>
+    </div>
+  </div>
+
+  <button id="createBtn">建立並上傳 Patient</button>
+
+  <div id="status" class="result" style="display:none"></div>
+
+  <script>
+    const HOSP_ORG_ID = '52960701';
+    const createBtn = document.getElementById('createBtn');
+    const statusEl = document.getElementById('status');
+
+    function showStatus(html){ statusEl.style.display='block'; statusEl.innerHTML = html; }
+    function clearStatus(){ statusEl.style.display='none'; statusEl.innerHTML = ''; }
+
+    createBtn.addEventListener('click', async () => {
+      clearStatus();
+      const name = document.getElementById('given').value.trim();
+      const gender = document.getElementById('gender').value;
+      const birthDate = document.getElementById('birthDate').value; // yyyy-mm-dd or ''
+      const identifier = document.getElementById('identifier').value.trim();
+      let server = document.getElementById('serverUrl').value.trim();
+      const preferReturn = document.getElementById('preferReturn').value;
+
+      if(!name){ showStatus('<strong style="color:#a33">請輸入姓名。</strong>'); return; }
+      if(!server) server = 'https://hapi.fhir.org/baseR4/';
+      if(!server.endsWith('/')) server = server + '/';
+
+      const patient = { resourceType: 'Patient', name: [{ use: 'official', text: name }] };
+      // try to split family/given
+      const parts = name.split(/\s+/);
+      if(parts.length>1){ patient.name[0].given = parts.slice(0, -1); patient.name[0].family = parts[parts.length-1]; }
+      else { patient.name[0].given = [name]; }
+
+      if(gender) patient.gender = gender;
+      if(birthDate) patient.birthDate = birthDate;
+      if(identifier) patient.identifier = [{ value: identifier }];
+
+      // managingOrganization
+      patient.managingOrganization = { reference: 'Organization/' + HOSP_ORG_ID, display: '花東醫中' };
+
+      showStatus('正在建立並上傳 Patient...');
+
+      try{
+        const resp = await fetch(server + 'Patient', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/fhir+json',
+            'Accept': 'application/fhir+json',
+            'Prefer': 'return=' + preferReturn
+          },
+          body: JSON.stringify(patient)
+        });
+
+        let respText = '';
+        try{ respText = await resp.text(); }catch(e){ respText = ''; }
+
+        if(!resp.ok){ showStatus('<strong style="color:#a33">伺服器回傳錯誤：' + resp.status + ' ' + resp.statusText + '</strong><pre>' + escapeHtml(respText) + '</pre>'); return; }
+
+        const location = resp.headers.get('location') || resp.headers.get('Location');
+        let id = null;
+        let resourceUrl = null;
+        if(location){ resourceUrl = location; const m = location.match(/Patient\/(.*?)\b/); if(m && m[1]) id = m[1]; }
+
+        let bodyJson = null;
+        if(respText){ try{ bodyJson = JSON.parse(respText); }catch(e){ bodyJson = null; } if(bodyJson && bodyJson.id && !id) id = bodyJson.id; if(bodyJson && !resourceUrl && bodyJson.resourceType && bodyJson.id) resourceUrl = server.replace(/\/$/, '') + '/' + bodyJson.resourceType + '/' + bodyJson.id; }
+
+        if(!id){ const contentLocation = resp.headers.get('content-location') || resp.headers.get('Content-Location'); if(contentLocation){ const m2 = contentLocation.match(/Patient\/(.*?)\b/); if(m2 && m2[1]) id = m2[1]; if(!resourceUrl) resourceUrl = contentLocation; } }
+
+        if(!id){ showStatus('<strong>上傳成功，但無法解析 resource id。</strong><pre>' + escapeHtml(respText || '[empty response]') + '</pre>'); return; }
+
+        const constructed = server.replace(/\/$/, '') + '/Patient/' + encodeURIComponent(id);
+        let out = '<strong>建立成功！</strong><br/>Patient id：<code>' + escapeHtml(id) + '</code><br/>';
+        out += '資源位置：<div class="link"><a href="' + escapeHtml(constructed) + '" target="_blank">' + escapeHtml(constructed) + '</a></div>';
+        out += '<div style="margin-top:8px"><button id="copyBtn">複製 id</button></div>';
+        showStatus(out);
+
+        const copyBtn = document.getElementById('copyBtn');
+        copyBtn.addEventListener('click', ()=>{ navigator.clipboard.writeText(id).then(()=>{ copyBtn.textContent = '已複製'; setTimeout(()=>copyBtn.textContent='複製 id',1200); }); });
+
+      }catch(err){ showStatus('<strong style="color:#a33">發生錯誤：</strong><pre>' + escapeHtml(err && err.message ? err.message : String(err)) + '</pre>'); }
+    });
+
+    function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  </script>
+
+  <p class="muted" style="margin-top:18px">備註：此範例會將 managingOrganization 設為 <code>Organization/52960701</code>（花東醫中）。請勿在公開 demo server 上上傳敏感個資；若伺服器需要授權，請在 fetch headers 中加入 <code>Authorization: 'Bearer &lt;token&gt;'</code>。</p>
+</body>
+</html>
