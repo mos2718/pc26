@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>呼吸音學習平台 - 慈濟大學醫學系</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --tzu-chi-blue: #0047AB;
+            --tzu-chi-light-blue: #4A90E2;
+            --bmj-red: #C41E3A;
+            --background-grey: #F8F9FA;
+            --text-dark: #1A1A1A;
+            --text-grey: #4A4A4A;
+            --border-color: #D1D5DB;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            --hover-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--background-grey);
+            color: var(--text-dark);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        
+        /* Header Section */
+        header {
+            background: linear-gradient(135deg, var(--tzu-chi-blue) 0%, var(--tzu-chi-light-blue) 100%);
+            color: white;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .institution-name {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 1.1rem;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            opacity: 0.95;
+        }
+        
+        h1 {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+            letter-spacing: 0.02em;
+        }
+        
+        .subtitle {
+            font-size: 1.15rem;
+            font-weight: 300;
+            opacity: 0.9;
+            letter-spacing: 0.03em;
+        }
+        
+        /* Navigation */
+        nav {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            padding: 0;
+        }
+        
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 1.2rem 1rem;
+            color: var(--text-grey);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .nav-item:hover {
+            color: var(--tzu-chi-blue);
+            background: rgba(74, 144, 226, 0.05);
+            border-bottom-color: var(--tzu-chi-light-blue);
+        }
+        
+        .nav-item.active {
+            color: var(--tzu-chi-blue);
+            border-bottom-color: var(--tzu-chi-blue);
+            font-weight: 600;
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 3rem;
+            margin-bottom: 2.5rem;
+            box-shadow: var(--card-shadow);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 2rem;
+            color: var(--tzu-chi-blue);
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 3px solid var(--tzu-chi-light-blue);
+            font-weight: 600;
+        }
+        
+        .section-subtitle {
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            margin: 2rem 0 1rem;
+            font-weight: 600;
+        }
+        
+        /* Timeline for History */
+        .timeline {
+            position: relative;
+            padding-left: 3rem;
+            margin-top: 2rem;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--tzu-chi-blue), var(--tzu-chi-light-blue));
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2.5rem;
+            padding-left: 2rem;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -3.5rem;
+            top: 0.3rem;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--tzu-chi-blue);
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px var(--tzu-chi-light-blue);
+        }
+        
+        .timeline-year {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--tzu-chi-blue);
+            margin-bottom: 0.5rem;
+        }
+        
+        .timeline-content {
+            color: var(--text-grey);
+            line-height: 1.8;
+        }
+        
+        /* Stethoscope Placement Grid */
+        .placement-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .placement-card {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.8rem;
+            transition: all 0.3s ease;
+            background: linear-gradient(to bottom, white, var(--background-grey));
+        }
+        
+        .placement-card:hover {
+            border-color: var(--tzu-chi-light-blue);
+            box-shadow: var(--hover-shadow);
+            transform: translateY(-2px);
+        }
+        
+        .placement-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--tzu-chi-blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .placement-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: var(--tzu-chi-blue);
+            color: white;
+            border-radius: 50%;
+            margin-right: 0.8rem;
+            font-size: 1rem;
+        }
+        
+        /* Tables */
+        .sound-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 2rem 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .sound-table thead {
+            background: linear-gradient(135deg, var(--tzu-chi-blue), var(--tzu-chi-light-blue));
+            color: white;
+        }
+        
+        .sound-table th {
+            padding: 1.2rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+        }
+        
+        .sound-table tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s ease;
+        }
+        
+        .sound-table tbody tr:hover {
+            background: rgba(74, 144, 226, 0.05);
+        }
+        
+        .sound-table tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        .sound-table td {
+            padding: 1.2rem 1rem;
+            color: var(--text-grey);
+            line-height: 1.6;
+        }
+        
+        .sound-type {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+        
+        /* Media Resources */
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .media-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .media-card:hover {
+            box-shadow: var(--hover-shadow);
+            transform: translateY(-4px);
+        }
+        
+        .media-thumbnail {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #E8F4F8, #D6EAF8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--tzu-chi-light-blue);
+        }
+        
+        .media-content {
+            padding: 1.5rem;
+        }
+        
+        .media-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+        
+        .media-description {
+            font-size: 0.9rem;
+            color: var(--text-grey);
+            line-height: 1.6;
+        }
+        
+        .media-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: var(--tzu-chi-light-blue);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-top: 0.8rem;
+            font-weight: 500;
+        }
+        
+        /* Quiz Section */
+        .quiz-container {
+            max-width: 800px;
+            margin: 2rem auto;
+        }
+        
+        .quiz-question {
+            background: var(--background-grey);
+            border-left: 4px solid var(--tzu-chi-blue);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 4px;
+        }
+        
+        .question-number {
+            color: var(--tzu-chi-blue);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .question-text {
+            font-size: 1.15rem;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+        
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .quiz-option {
+            padding: 1.2rem 1.5rem;
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .quiz-option:hover {
+            border-color: var(--tzu-chi-light-blue);
+            background: rgba(74, 144, 226, 0.05);
+            transform: translateX(8px);
+        }
+        
+        .option-label {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--background-grey);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 1rem;
+            color: var(--text-grey);
+        }
+        
+        .quiz-option:hover .option-label {
+            background: var(--tzu-chi-light-blue);
+            color: white;
+        }
+        
+        /* Audio Player Section */
+        .audio-library {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .audio-item {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .audio-item:hover {
+            box-shadow: var(--hover-shadow);
+            border-color: var(--tzu-chi-light-blue);
+        }
+        
+        .audio-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .audio-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--tzu-chi-blue), var(--tzu-chi-light-blue));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+        }
+        
+        .audio-title-group h3 {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            margin-bottom: 0.2rem;
+        }
+        
+        .audio-category {
+            font-size: 0.85rem;
+            color: var(--text-grey);
+        }
+        
+        .audio-player {
+            width: 100%;
+            margin: 1rem 0;
+            border-radius: 20px;
+        }
+        
+        .audio-description {
+            font-size: 0.9rem;
+            color: var(--text-grey);
+            line-height: 1.6;
+            margin-top: 1rem;
+        }
+        
+        /* Reference Note */
+        .reference-note {
+            background: #FFF9E6;
+            border-left: 4px solid #FFC107;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+        
+        .reference-note-title {
+            font-weight: 600;
+            color: #F57C00;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .reference-note-title::before {
+            content: '📌';
+            margin-right: 0.5rem;
+        }
+        
+        /* Footer */
+        footer {
+            background: var(--text-dark);
+            color: white;
+            padding: 3rem 2rem;
+            margin-top: 4rem;
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .footer-content p {
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .nav-item {
+                font-size: 0.85rem;
+                padding: 1rem 0.5rem;
+            }
+            
+            .section {
+                padding: 2rem 1.5rem;
+            }
+            
+            .placement-grid,
+            .media-grid,
+            .audio-library {
+                grid-template-columns: 1fr;
+            }
+            
+            .timeline {
+                padding-left: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="institution-name">慈濟大學醫學系</div>
+            <h1>呼吸音學習平台</h1>
+            <div class="subtitle">Breath Sounds Learning Platform</div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="nav-container">
+            <a class="nav-item active" data-section="history">聽診器歷史</a>
+            <a class="nav-item" data-section="placement">聽診器放置</a>
+            <a class="nav-item" data-section="sounds">呼吸音分類</a>
+            <a class="nav-item" data-section="media">影音資源</a>
+            <a class="nav-item" data-section="quiz">文字測驗</a>
+            <a class="nav-item" data-section="audio">實際音檔</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <!-- Section 1: History -->
+        <section id="history" class="section active">
+            <h2 class="section-title">聽診器的歷史發展</h2>
+            
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-year">1816年</div>
+                    <div class="timeline-content">
+                        法國醫師René Laennec發明了第一支聽診器。當時他為了避免直接將耳朵貼在女性病患胸前的尷尬，將一疊紙捲成管狀進行聽診，意外發現這種方式能更清楚地聽到心音和肺音。這項發明徹底改變了醫學診斷的方式。
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-year">1819年</div>
+                    <div class="timeline-content">
+                        Laennec出版了劃時代的著作《De l'Auscultation Médiate》（間接聽診論），詳細描述了各種心肺疾病的聽診特徵，奠定了現代聽診學的基礎。他將聽診器命名為"stethoscope"，源自希臘文stethos（胸部）和skopein（觀察）。
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-year">1851年</div>
+                    <div class="timeline-content">
+                        愛爾蘭醫師Arthur Leared發明了雙耳聽診器，使醫師能夠用雙耳同時聽診，大幅提升了聽診的準確性和舒適度。這項改良使聽診器開始普及於臨床實務中。
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-year">1961年</div>
+                    <div class="timeline-content">
+                        美國心臟科醫師David Littmann博士設計了革命性的輕量化聽診器，具有優異的聲學性能和耐用性。Littmann聽診器至今仍是臨床最廣泛使用的品牌之一，成為醫學專業的象徵。
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-year">21世紀</div>
+                    <div class="timeline-content">
+                        數位聽診器問世，能夠放大聲音、錄製音檔、降低環境噪音，甚至透過人工智慧輔助診斷。這些創新技術為遠距醫療和醫學教育帶來新的可能性，也讓聽診這項古老技藝在現代醫學中持續發展。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="reference-note">
+                <div class="reference-note-title">臨床意義</div>
+                儘管現代醫學擁有先進的影像技術，聽診仍然是臨床診斷不可或缺的基本技能。熟練的聽診技巧能夠在床邊快速評估病患狀況，是每位醫師必須精通的核心能力。
+            </div>
+        </section>
+        
+        <!-- Section 2: Placement -->
+        <section id="placement" class="section">
+            <h2 class="section-title">聽診器的正確放置位置</h2>
+            
+            <h3 class="section-subtitle">前胸聽診點</h3>
+            <div class="placement-grid">
+                <div class="placement-card">
+                    <div class="placement-title">
+                        <span class="placement-number">1</span>
+                        上肺野（肺尖）
+                    </div>
+                    <p><strong>位置：</strong>鎖骨上方</p>
+                    <p><strong>解剖對應：</strong>肺尖區域</p>
+                    <p><strong>臨床意義：</strong>結核病好發部位，需仔細聽診</p>
+                </div>
+                
+                <div class="placement-card">
+                    <div class="placement-title">
+                        <span class="placement-number">2</span>
+                        上肺野（前）
+                    </div>
+                    <p><strong>位置：</strong>第二肋間鎖骨中線</p>
+                    <p><strong>解剖對應：</strong>右上葉、左上葉</p>
+                    <p><strong>臨床意義：</strong>評估上葉通氣狀況</p>
+                </div>
+                
+                <div class="placement-card">
+                    <div class="placement-title">
+                        <span class="placement-number">3</span>
+                        中肺野
+                    </div>
+                    <p><strong>位置：</strong>第四肋間鎖骨中線</p>
+                    <p><strong>解剖對應：</strong>右中葉、左上葉舌段</p>
+                    <p><strong>臨床意義：</strong>中葉症候群診斷重點</p>
+                </div>
+                
+                <div class="placement-card">
+                    <div class="placement-title">
+                        <span class="placement-number">4</span>
+                        下肺野（前）
+                    </div>
+                    <p><strong>位置：</strong>第六肋間鎖骨中線</p>
+                    <p><strong>解剖對應：</strong>下葉前基底段</p>
+                    <p><strong>臨床意義：</strong>評估下葉前段通氣</p>
+                </div>
+            </div>
+            
+            <h3 class="section-subtitle">後胸聽診點</h3>
+            <div class="placement-grid">
+                <div class="placement-card">
+                    <div class="placement-title">
+                        <span class="placement-number">5</span>
+                        上肺野（後上）
+                    </div>
+                    <p><strong>位置：</strong>肩胛骨上緣</p>
+                    <p><strong>解剖對應：</strong>上葉後段</p>
+                    <p><strong>臨床意義：</strong>吸入性肺炎好發部位</p>
+                </div>
+                
+                <div class="placement-card">
+                    <div class="placement-title">
+                        <span class="placement-number">6</span>
+                        中肺野（肩胛間）
+                    </div>
+                    <p><strong>位置：</strong>肩胛骨內側緣中段</p>
+                    <p><strong>解剖對應：</strong>上葉後段、下葉上段</p>
+                    <p><strong>臨床意義：</strong>縱膈腫瘤可能影響此區</p>
+                </div>
+                
+                <div class="placement-card">
+                    <div class="placement-title">
+                        <span class="placement-number">7</span>
+                        下肺野（肩胛下）
+                    </div>
+                    <p><strong>位置：</strong>肩胛骨下角下方</p>
+                    <p><strong>解剖對應：</strong>下葉基底段</p>
+                    <p><strong>臨床意義：</strong>肺炎、肋膜積水常見於此</p>
+                </div>
+                
+                <div class="placement-card">
+                    <div class="placement-title">
+                        <span class="placement-number">8</span>
+                        下肺野（後基底）
+                    </div>
+                    <p><strong>位置：</strong>後肋基底部</p>
+                    <p><strong>解剖對應：</strong>下葉後基底段</p>
+                    <p><strong>臨床意義：</strong>最容易累積分泌物的部位</p>
+                </div>
+            </div>
+            
+            <div class="reference-note">
+                <div class="reference-note-title">聽診技巧提醒</div>
+                進行聽診時應確保：(1) 環境安靜；(2) 病患採坐姿或半坐臥；(3) 直接接觸皮膚，避免隔著衣物；(4) 左右對稱比較；(5) 要求病患深呼吸，但避免過度換氣；(6) 系統性地從上到下、從前到後完整聽診。
+            </div>
+        </section>
+        
+        <!-- Section 3: Sounds -->
+        <section id="sounds" class="section">
+            <h2 class="section-title">正常與異常呼吸音</h2>
+            
+            <h3 class="section-subtitle">正常呼吸音</h3>
+            <table class="sound-table">
+                <thead>
+                    <tr>
+                        <th>類型</th>
+                        <th>特徵</th>
+                        <th>聽診位置</th>
+                        <th>吸氣/呼氣比</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="sound-type">支氣管呼吸音<br>(Bronchial)</td>
+                        <td>音調高、音量大、呈管狀音，吸氣和呼氣之間有明顯間隔</td>
+                        <td>氣管、喉部、胸骨上窩</td>
+                        <td>吸氣 &lt; 呼氣<br>(1:2或1:3)</td>
+                    </tr>
+                    <tr>
+                        <td class="sound-type">支氣管肺泡音<br>(Bronchovesicular)</td>
+                        <td>介於支氣管音與肺泡音之間，音調中等</td>
+                        <td>胸骨兩側、肩胛骨間</td>
+                        <td>吸氣 = 呼氣<br>(1:1)</td>
+                    </tr>
+                    <tr>
+                        <td class="sound-type">肺泡呼吸音<br>(Vesicular)</td>
+                        <td>音調低、柔和似風吹過樹葉，呼氣音很短且漸弱</td>
+                        <td>大部分肺野</td>
+                        <td>吸氣 &gt; 呼氣<br>(3:1或4:1)</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3 class="section-subtitle">異常呼吸音（附加音）</h3>
+            <table class="sound-table">
+                <thead>
+                    <tr>
+                        <th>類型</th>
+                        <th>特徵描述</th>
+                        <th>臨床意義</th>
+                        <th>常見疾病</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="sound-type">囉音/水泡音<br>(Crackles/Rales)</td>
+                        <td>不連續、爆裂音，如捏塑膠袋或在耳邊搓頭髮的聲音。可分為粗囉音（較響、較濕）和細囉音（較細、較乾）</td>
+                        <td>氣道或肺泡內有液體或分泌物，氣流通過時產生的聲音</td>
+                        <td>肺炎、肺水腫、肺纖維化、支氣管擴張症、心衰竭</td>
+                    </tr>
+                    <tr>
+                        <td class="sound-type">哮鳴音<br>(Wheezes)</td>
+                        <td>連續性高音調音樂性聲音，通常在呼氣時較明顯，如吹口哨聲</td>
+                        <td>氣道狹窄或阻塞，常見於小氣道痙攣或阻塞</td>
+                        <td>氣喘、慢性阻塞性肺病（COPD）、支氣管炎、異物吸入</td>
+                    </tr>
+                    <tr>
+                        <td class="sound-type">乾囉音/鼾音<br>(Rhonchi)</td>
+                        <td>連續性低音調粗糙聲音，如打鼾聲，咳嗽後可能改變或消失</td>
+                        <td>大氣道內有分泌物或黏液堆積</td>
+                        <td>慢性支氣管炎、COPD急性發作、肺炎</td>
+                    </tr>
+                    <tr>
+                        <td class="sound-type">喘鳴<br>(Stridor)</td>
+                        <td>高音調、尖銳的吸氣性聲音，不需聽診器即可聽到</td>
+                        <td>上呼吸道（喉部、氣管）嚴重狹窄或阻塞，屬於呼吸急症</td>
+                        <td>會厭炎、喉頭水腫、異物梗塞、喉癌、氣管狹窄</td>
+                    </tr>
+                    <tr>
+                        <td class="sound-type">肋膜摩擦音<br>(Pleural Friction Rub)</td>
+                        <td>粗糙的摩擦聲或皮革摩擦聲，吸氣和呼氣都可聽到，深呼吸時更明顯</td>
+                        <td>發炎的臟層和壁層肋膜相互摩擦產生</td>
+                        <td>肋膜炎、肺栓塞、肺炎併發肋膜炎</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3 class="section-subtitle">呼吸音減弱或消失</h3>
+            <table class="sound-table">
+                <thead>
+                    <tr>
+                        <th>狀況</th>
+                        <th>可能原因</th>
+                        <th>常見疾病</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="sound-type">局部呼吸音減弱</td>
+                        <td>肺部膨脹不全、氣道阻塞、胸壁或肋膜病變</td>
+                        <td>肺炎實質化、肋膜積水、氣胸、肺塌陷、肺腫瘤</td>
+                    </tr>
+                    <tr>
+                        <td class="sound-type">雙側呼吸音減弱</td>
+                        <td>肥胖、肌肉發達、呼吸動作減弱、COPD過度充氣</td>
+                        <td>COPD、肺氣腫、重症肌無力、呼吸肌疲乏</td>
+                    </tr>
+                    <tr>
+                        <td class="sound-type">呼吸音消失</td>
+                        <td>完全的氣道阻塞或大量肋膜腔積液/積氣</td>
+                        <td>大量氣胸、大量肋膜積水、主支氣管完全阻塞</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="reference-note">
+                <div class="reference-note-title">重要診斷概念</div>
+                聽診發現異常時，必須結合病史、理學檢查其他發現（如叩診、觸診）以及影像學檢查，才能做出正確診斷。單一聽診發現的臨床意義需要在整體臨床脈絡中判讀。記住：「聽診是一門藝術，需要長期訓練與臨床經驗累積。」
+            </div>
+        </section>
+        
+        <!-- Section 4: Media -->
+        <section id="media" class="section">
+            <h2 class="section-title">影音學習資源</h2>
+            
+            <h3 class="section-subtitle">教學影片</h3>
+            <div class="media-grid">
+                <div class="media-card">
+                    <div class="media-thumbnail">🎥</div>
+                    <div class="media-content">
+                        <div class="media-title">聽診器使用基本技巧</div>
+                        <div class="media-description">
+                            示範如何正確使用聽診器，包括耳管調整、胸件選擇（膜式vs鐘式）、聽診器放置角度等基本技巧。
+                        </div>
+                        <span class="media-badge">基礎教學 10分鐘</span>
+                    </div>
+                </div>
+                
+                <div class="media-card">
+                    <div class="media-thumbnail">🎥</div>
+                    <div class="media-content">
+                        <div class="media-title">系統性胸部聽診流程</div>
+                        <div class="media-description">
+                            完整示範從前胸到後胸的系統性聽診流程，強調左右對稱比較的重要性及常見錯誤。
+                        </div>
+                        <span class="media-badge">臨床技能 15分鐘</span>
+                    </div>
+                </div>
+                
+                <div class="media-card">
+                    <div class="media-thumbnail">🎥</div>
+                    <div class="media-content">
+                        <div class="media-title">正常呼吸音辨識</div>
+                        <div class="media-description">
+                            詳細講解肺泡音、支氣管肺泡音、支氣管音的聲學特徵，搭配實際案例示範。
+                        </div>
+                        <span class="media-badge">進階教學 12分鐘</span>
+                    </div>
+                </div>
+                
+                <div class="media-card">
+                    <div class="media-thumbnail">🎥</div>
+                    <div class="media-content">
+                        <div class="media-title">異常呼吸音：囉音與哮鳴音</div>
+                        <div class="media-description">
+                            深入分析各種囉音（粗、細）和哮鳴音的特徵、發生機轉及臨床意義，配合真實病例。
+                        </div>
+                        <span class="media-badge">臨床診斷 18分鐘</span>
+                    </div>
+                </div>
+                
+                <div class="media-card">
+                    <div class="media-thumbnail">🎥</div>
+                    <div class="media-content">
+                        <div class="media-title">常見肺部疾病聽診發現</div>
+                        <div class="media-description">
+                            整合肺炎、COPD、氣喘、肺水腫、氣胸等常見疾病的典型聽診表現及鑑別診斷要點。
+                        </div>
+                        <span class="media-badge">病例討論 25分鐘</span>
+                    </div>
+                </div>
+                
+                <div class="media-card">
+                    <div class="media-thumbnail">🎥</div>
+                    <div class="media-content">
+                        <div class="media-title">數位聽診器應用與遠距教學</div>
+                        <div class="media-description">
+                            介紹現代數位聽診技術在臨床和教學上的應用，包括錄音分析、AI輔助診斷等創新工具。
+                        </div>
+                        <span class="media-badge">科技應用 20分鐘</span>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 class="section-subtitle">Podcast 音訊課程</h3>
+            <div class="media-grid">
+                <div class="media-card">
+                    <div class="media-thumbnail">🎙️</div>
+                    <div class="media-content">
+                        <div class="media-title">聽診學的歷史與演進</div>
+                        <div class="media-description">
+                            從Laennec的發明到現代數位聽診器，探討聽診技術兩百年來的發展歷程與臨床影響。
+                        </div>
+                        <span class="media-badge">歷史回顧 30分鐘</span>
+                    </div>
+                </div>
+                
+                <div class="media-card">
+                    <div class="media-thumbnail">🎙️</div>
+                    <div class="media-content">
+                        <div class="media-title">呼吸音的聲學原理</div>
+                        <div class="media-description">
+                            解析氣流動力學、聲波傳導、共振現象等物理原理，幫助理解為何會產生各種呼吸音。
+                        </div>
+                        <span class="media-badge">基礎科學 35分鐘</span>
+                    </div>
+                </div>
+                
+                <div class="media-card">
+                    <div class="media-thumbnail">🎙️</div>
+                    <div class="media-content">
+                        <div class="media-title">資深醫師的聽診經驗談</div>
+                        <div class="media-description">
+                            邀請臨床經驗豐富的胸腔科醫師分享聽診技巧、常見陷阱及經典案例。
+                        </div>
+                        <span class="media-badge">專家訪談 45分鐘</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="reference-note">
+                <div class="reference-note-title">學習建議</div>
+                建議學習者先觀看基礎教學影片，熟悉聽診技巧後，再進階到異常呼吸音的辨識。搭配Podcast課程可以在通勤或休息時間加強學習。記得要反覆聆聽實際音檔，訓練自己的聽覺辨識能力。
+            </div>
+        </section>
+        
+        <!-- Section 5: Quiz -->
+        <section id="quiz" class="section">
+            <h2 class="section-title">呼吸音知識測驗</h2>
+            
+            <div class="quiz-container">
+                <div class="quiz-question">
+                    <div class="question-number">問題 1 / 10</div>
+                    <div class="question-text">
+                        下列何者是正常肺泡呼吸音的特徵？
+                    </div>
+                    <div class="quiz-options">
+                        <div class="quiz-option">
+                            <div class="option-label">A</div>
+                            <div>音調高，吸氣與呼氣時間相等</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">B</div>
+                            <div>音調低且柔和，吸氣時間明顯長於呼氣</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">C</div>
+                            <div>呈管狀音，呼氣時間長於吸氣</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">D</div>
+                            <div>連續性音樂性聲音</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <div class="question-number">問題 2 / 10</div>
+                    <div class="question-text">
+                        哮鳴音（Wheezes）最常在下列哪種情況下聽到？
+                    </div>
+                    <div class="quiz-options">
+                        <div class="quiz-option">
+                            <div class="option-label">A</div>
+                            <div>肺泡內有滲出液</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">B</div>
+                            <div>小氣道狹窄或痙攣</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">C</div>
+                            <div>肋膜發炎</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">D</div>
+                            <div>大氣道完全阻塞</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <div class="question-number">問題 3 / 10</div>
+                    <div class="question-text">
+                        細囉音（Fine Crackles）最常見於下列哪種疾病？
+                    </div>
+                    <div class="quiz-options">
+                        <div class="quiz-option">
+                            <div class="option-label">A</div>
+                            <div>氣喘急性發作</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">B</div>
+                            <div>肺纖維化</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">C</div>
+                            <div>氣胸</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">D</div>
+                            <div>慢性支氣管炎</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <div class="question-number">問題 4 / 10</div>
+                    <div class="question-text">
+                        聽診時發現單側呼吸音消失，最可能的診斷是？
+                    </div>
+                    <div class="quiz-options">
+                        <div class="quiz-option">
+                            <div class="option-label">A</div>
+                            <div>雙側肺炎</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">B</div>
+                            <div>氣喘</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">C</div>
+                            <div>大量氣胸或肋膜積水</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">D</div>
+                            <div>COPD</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <div class="question-number">問題 5 / 10</div>
+                    <div class="question-text">
+                        肋膜摩擦音（Pleural Friction Rub）的特徵是？
+                    </div>
+                    <div class="quiz-options">
+                        <div class="quiz-option">
+                            <div class="option-label">A</div>
+                            <div>高音調連續性聲音，只在呼氣時出現</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">B</div>
+                            <div>粗糙摩擦聲，吸氣和呼氣都可聽到</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">C</div>
+                            <div>不連續爆裂音，咳嗽後消失</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">D</div>
+                            <div>低音調鼾聲，深呼吸時減弱</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <div class="question-number">問題 6 / 10</div>
+                    <div class="question-text">
+                        前胸第二肋間鎖骨中線處主要聽到的是哪一葉的呼吸音？
+                    </div>
+                    <div class="quiz-options">
+                        <div class="quiz-option">
+                            <div class="option-label">A</div>
+                            <div>下葉</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">B</div>
+                            <div>上葉</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">C</div>
+                            <div>右中葉</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">D</div>
+                            <div>所有肺葉均等</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <div class="question-number">問題 7 / 10</div>
+                    <div class="question-text">
+                        喘鳴（Stridor）是下列何種狀況的警訊？
+                    </div>
+                    <div class="quiz-options">
+                        <div class="quiz-option">
+                            <div class="option-label">A</div>
+                            <div>下呼吸道感染</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">B</div>
+                            <div>上呼吸道嚴重狹窄或阻塞</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">C</div>
+                            <div>肺泡塌陷</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">D</div>
+                            <div>肋膜腔積液</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <div class="question-number">問題 8 / 10</div>
+                    <div class="question-text">
+                        COPD病患最典型的聽診發現是？
+                    </div>
+                    <div class="quiz-options">
+                        <div class="quiz-option">
+                            <div class="option-label">A</div>
+                            <div>雙側呼吸音減弱，可能伴隨哮鳴音或乾囉音</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">B</div>
+                            <div>雙側細囉音</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">C</div>
+                            <div>單側呼吸音消失</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">D</div>
+                            <div>肋膜摩擦音</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <div class="question-number">問題 9 / 10</div>
+                    <div class="question-text">
+                        粗囉音（Coarse Crackles）常見於下列何種情況？
+                    </div>
+                    <div class="quiz-options">
+                        <div class="quiz-option">
+                            <div class="option-label">A</div>
+                            <div>肺纖維化晚期</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">B</div>
+                            <div>大氣道內有分泌物或黏液，如慢性支氣管炎</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">C</div>
+                            <div>氣胸</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">D</div>
+                            <div>肋膜炎</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <div class="question-number">問題 10 / 10</div>
+                    <div class="question-text">
+                        進行胸部聽診時，下列何者是正確的作法？
+                    </div>
+                    <div class="quiz-options">
+                        <div class="quiz-option">
+                            <div class="option-label">A</div>
+                            <div>可以隔著衣物聽診以維護病患隱私</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">B</div>
+                            <div>只需要聽診前胸即可</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">C</div>
+                            <div>應直接接觸皮膚，系統性地比較左右對稱部位</div>
+                        </div>
+                        <div class="quiz-option">
+                            <div class="option-label">D</div>
+                            <div>讓病患正常呼吸即可，不需深呼吸</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="reference-note">
+                <div class="reference-note-title">測驗說明</div>
+                此測驗涵蓋呼吸音的基本概念、異常音的辨識、臨床意義及聽診技巧。建議完成前面章節的學習後再進行測驗。實際臨床工作中，聽診技能需要長期訓練與經驗累積，理論知識是基礎，但實務操作更為重要。
+            </div>
+        </section>
+        
+        <!-- Section 6: Audio -->
+        <section id="audio" class="section">
+            <h2 class="section-title">實際呼吸音音檔庫</h2>
+            
+            <h3 class="section-subtitle">正常呼吸音</h3>
+            <div class="audio-library">
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">🫁</div>
+                        <div class="audio-title-group">
+                            <h3>正常肺泡呼吸音</h3>
+                            <div class="audio-category">正常 - 周邊肺野</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>特徵：</strong>柔和低音調，吸氣時間約為呼氣的3-4倍，呼氣音漸弱。<br>
+                        <strong>位置：</strong>大部分肺野<br>
+                        <strong>臨床意義：</strong>正常肺部通氣的表現
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">🫁</div>
+                        <div class="audio-title-group">
+                            <h3>支氣管肺泡音</h3>
+                            <div class="audio-category">正常 - 胸骨旁</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>特徵：</strong>中等音調，吸氣與呼氣時間約相等。<br>
+                        <strong>位置：</strong>胸骨兩側第1-2肋間、肩胛骨間<br>
+                        <strong>臨床意義：</strong>介於大氣道與肺泡之間的正常音
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">🫁</div>
+                        <div class="audio-title-group">
+                            <h3>支氣管呼吸音</h3>
+                            <div class="audio-category">正常 - 氣管上方</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>特徵：</strong>高音調管狀音，呼氣時間長於吸氣，兩者間有間隔。<br>
+                        <strong>位置：</strong>胸骨上窩、氣管<br>
+                        <strong>臨床意義：</strong>大氣道正常音（若出現於肺野則為異常）
+                    </div>
+                </div>
+            </div>
+            
+            <h3 class="section-subtitle">異常呼吸音 - 連續性</h3>
+            <div class="audio-library">
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">⚠️</div>
+                        <div class="audio-title-group">
+                            <h3>哮鳴音（高音調）</h3>
+                            <div class="audio-category">異常 - 氣喘</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>特徵：</strong>連續性高音調音樂性聲音，似吹口哨，呼氣時較明顯。<br>
+                        <strong>常見疾病：</strong>氣喘、COPD、支氣管炎<br>
+                        <strong>病理機轉：</strong>小氣道狹窄或痙攣
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">⚠️</div>
+                        <div class="audio-title-group">
+                            <h3>乾囉音/鼾音</h3>
+                            <div class="audio-category">異常 - 慢性支氣管炎</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>特徵：</strong>連續性低音調粗糙聲，如打鼾，咳嗽後可能改變。<br>
+                        <strong>常見疾病：</strong>慢性支氣管炎、COPD急性發作<br>
+                        <strong>病理機轉：</strong>大氣道內分泌物或黏液
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">🚨</div>
+                        <div class="audio-title-group">
+                            <h3>喘鳴（Stridor）</h3>
+                            <div class="audio-category">緊急 - 上呼吸道阻塞</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>特徵：</strong>高音調尖銳吸氣聲，不需聽診器即可聽到。<br>
+                        <strong>常見疾病：</strong>會厭炎、喉頭水腫、異物梗塞<br>
+                        <strong>臨床意義：</strong>呼吸急症警訊！需立即處理
+                    </div>
+                </div>
+            </div>
+            
+            <h3 class="section-subtitle">異常呼吸音 - 不連續性</h3>
+            <div class="audio-library">
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">⚠️</div>
+                        <div class="audio-title-group">
+                            <h3>細囉音（Fine Crackles）</h3>
+                            <div class="audio-category">異常 - 肺纖維化</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>特徵：</strong>細微爆裂音，如搓頭髮聲，吸氣末期明顯。<br>
+                        <strong>常見疾病：</strong>肺纖維化、間質性肺病、肺水腫早期<br>
+                        <strong>病理機轉：</strong>塌陷的肺泡在吸氣時突然張開
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">⚠️</div>
+                        <div class="audio-title-group">
+                            <h3>粗囉音（Coarse Crackles）</h3>
+                            <div class="audio-category">異常 - 肺炎</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>特徵：</strong>響亮爆裂音，如捏塑膠袋，吸氣和呼氣都可聽到。<br>
+                        <strong>常見疾病：</strong>肺炎、支氣管擴張症、肺水腫<br>
+                        <strong>病理機轉：</strong>氣道或肺泡內有液體或分泌物
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">⚠️</div>
+                        <div class="audio-title-group">
+                            <h3>肋膜摩擦音</h3>
+                            <div class="audio-category">異常 - 肋膜炎</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>特徵：</strong>粗糙摩擦聲或皮革摩擦聲，吸氣呼氣都有，深呼吸更明顯。<br>
+                        <strong>常見疾病：</strong>肋膜炎、肺栓塞、肺炎併發肋膜炎<br>
+                        <strong>病理機轉：</strong>發炎的臟層與壁層肋膜相互摩擦
+                    </div>
+                </div>
+            </div>
+            
+            <h3 class="section-subtitle">臨床案例綜合音檔</h3>
+            <div class="audio-library">
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">📋</div>
+                        <div class="audio-title-group">
+                            <h3>急性氣喘發作</h3>
+                            <div class="audio-category">病例 - 25歲女性</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>病史：</strong>氣喘病史，夜間急性喘息發作<br>
+                        <strong>聽診發現：</strong>雙側廣泛哮鳴音，以呼氣為主<br>
+                        <strong>診斷：</strong>急性氣喘發作
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">📋</div>
+                        <div class="audio-title-group">
+                            <h3>右下葉肺炎</h3>
+                            <div class="audio-category">病例 - 68歲男性</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>病史：</strong>發燒、咳嗽有痰三天<br>
+                        <strong>聽診發現：</strong>右下肺野粗囉音、支氣管呼吸音<br>
+                        <strong>診斷：</strong>右下葉肺炎合併實質化
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">📋</div>
+                        <div class="audio-title-group">
+                            <h3>COPD急性惡化</h3>
+                            <div class="audio-category">病例 - 72歲男性</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>病史：</strong>COPD，近日喘息加劇、痰量增加<br>
+                        <strong>聽診發現：</strong>雙側呼吸音減弱，哮鳴音、乾囉音<br>
+                        <strong>診斷：</strong>COPD急性惡化併感染
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">📋</div>
+                        <div class="audio-title-group">
+                            <h3>心因性肺水腫</h3>
+                            <div class="audio-category">病例 - 80歲女性</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>病史：</strong>心衰竭病史，夜間端坐呼吸<br>
+                        <strong>聽診發現：</strong>雙側下肺野細囉音、粗囉音<br>
+                        <strong>診斷：</strong>急性心因性肺水腫
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">📋</div>
+                        <div class="audio-title-group">
+                            <h3>特發性肺纖維化</h3>
+                            <div class="audio-category">病例 - 65歲男性</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>病史：</strong>漸進性呼吸困難一年<br>
+                        <strong>聽診發現：</strong>雙側下肺野細囉音（Velcro crackles）<br>
+                        <strong>診斷：</strong>特發性肺纖維化（IPF）
+                    </div>
+                </div>
+                
+                <div class="audio-item">
+                    <div class="audio-header">
+                        <div class="audio-icon">📋</div>
+                        <div class="audio-title-group">
+                            <h3>左側氣胸</h3>
+                            <div class="audio-category">病例 - 22歲男性</div>
+                        </div>
+                    </div>
+                    <audio class="audio-player" controls>
+                        <source src="#" type="audio/mpeg">
+                        您的瀏覽器不支援音訊播放
+                    </audio>
+                    <div class="audio-description">
+                        <strong>病史：</strong>突發左胸痛、呼吸困難<br>
+                        <strong>聽診發現：</strong>左側呼吸音明顯減弱或消失<br>
+                        <strong>診斷：</strong>自發性氣胸
+                    </div>
+                </div>
+            </div>
+            
+            <div class="reference-note">
+                <div class="reference-note-title">音檔使用說明</div>
+                這些音檔由數位聽診器錄製，經過專業編輯和標註。建議使用耳機聆聽以獲得最佳效果。學習時應：(1) 先閱讀病史和特徵描述；(2) 反覆聆聽音檔；(3) 嘗試自行辨識特徵；(4) 對照標準答案；(5) 比較類似的音檔以強化鑑別能力。記住，臨床診斷需結合完整的病史、理學檢查和影像學資料，聽診只是其中一環。
+            </div>
+        </section>
+    </div>
+    
+    <footer>
+        <div class="footer-content">
+            <p><strong>慈濟大學醫學系 呼吸音學習平台</strong></p>
+            <p>Tzu Chi University School of Medicine - Breath Sounds Learning Platform</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">© 2024 慈濟大學醫學系 版權所有</p>
+            <p style="font-size: 0.85rem; opacity: 0.8;">本平台僅供教學使用，不可作為臨床診斷依據</p>
+        </div>
+    </footer>
+    
+    <script>
+        // Navigation functionality
+        const navItems = document.querySelectorAll('.nav-item');
+        const sections = document.querySelectorAll('.section');
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const targetSection = item.getAttribute('data-section');
+                
+                // Remove active class from all nav items and sections
+                navItems.forEach(nav => nav.classList.remove('active'));
+                sections.forEach(section => section.classList.remove('active'));
+                
+                // Add active class to clicked nav item and corresponding section
+                item.classList.add('active');
+                document.getElementById(targetSection).classList.add('active');
+                
+                // Smooth scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+        
+        // Quiz option interactivity (for demonstration)
+        const quizOptions = document.querySelectorAll('.quiz-option');
+        quizOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // Remove selection from siblings
+                const siblings = option.parentElement.querySoldAll('.quiz-option');
+                siblings.forEach(sib => {
+                    sib.style.borderColor = 'var(--border-color)';
+                    sib.style.background = 'white';
+                });
+                
+                // Highlight selected option
+                option.style.borderColor = 'var(--tzu-chi-blue)';
+                option.style.background = 'rgba(74, 144, 226, 0.1)';
+            });
+        });
+    </script>
+</body>
+</html>
